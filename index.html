@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>iFlix</title>
+
+<!-- --- iOS Standalone App Meta Tags --- -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="iFlix">
+<link rel="apple-touch-icon" href="icon.png">
+
+<style>
+/* --- General reset --- */
+html, body {
+    height: 100%;
+    margin:0;
+    padding:0;
+    font-family: 'Helvetica', sans-serif;
+    background: #eee;
+    overflow: hidden;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* --- Status bar mock --- */
+#statusBar {
+    height:20px;
+    background:#000;
+    color:#fff;
+    font-size:12px;
+    text-align:center;
+    line-height:20px;
+}
+
+/* --- Tabs --- */
+#tabBar {
+    position:fixed;
+    bottom:0;
+    width:100%;
+    height:50px;
+    background:#ddd;
+    border-top:1px solid #aaa;
+    display:flex;
+    justify-content:space-around;
+}
+
+.tab {
+    flex:1;
+    text-align:center;
+    line-height:50px;
+    font-weight:bold;
+    color:#333;
+    border-right:1px solid #aaa;
+}
+
+.tab:last-child { border-right:none; }
+.tab.active { background:#bbb; }
+
+/* --- Pages --- */
+.page {
+    display:none;
+    padding:10px;
+    margin-bottom:50px;
+    overflow-y:auto;
+    height: calc(100% - 70px);
+}
+
+.page.active { display:block; }
+
+/* --- Buttons --- */
+.button {
+    display:inline-block;
+    padding:10px 20px;
+    background: linear-gradient(to bottom, #fff, #ccc);
+    border:1px solid #888;
+    border-radius:10px;
+    box-shadow:0 2px 2px rgba(0,0,0,0.3);
+    margin:5px 0;
+    cursor:pointer;
+    text-align:center;
+}
+
+/* --- Video list --- */
+.videoItem {
+    border:1px solid #aaa;
+    border-radius:8px;
+    padding:8px;
+    margin:5px 0;
+    background:#fff;
+}
+
+.videoItem h4 {
+    margin:0 0 5px 0;
+    font-size:14px;
+}
+
+.videoItem video {
+    width:100%;
+    max-width:320px;
+    display:block;
+}
+
+/* --- Upload form --- */
+#uploadForm input, #uploadForm select {
+    display:block;
+    margin:5px 0;
+    padding:5px;
+    font-size:14px;
+    width:100%;
+}
+
+/* --- Notification popup --- */
+#notification {
+    position:fixed;
+    top:-60px;
+    left:50%;
+    transform:translateX(-50%);
+    width:90%;
+    max-width:320px;
+    background:#fff;
+    border:1px solid #888;
+    border-radius:10px;
+    padding:10px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.5);
+    text-align:center;
+    z-index:9999;
+    transition: top 0.5s;
+}
+</style>
+</head>
+<body>
+
+<div id="statusBar">iFlix</div>
+
+<!-- Pages -->
+<div id="home" class="page active">
+    <h3>Home Feed</h3>
+    <div id="videoList"></div>
+</div>
+
+<div id="subscriptions" class="page">
+    <h3>Subscriptions</h3>
+    <div id="subscriptionList"></div>
+</div>
+
+<div id="upload" class="page">
+    <h3>Upload Video</h3>
+    <form id="uploadForm">
+        <label>Username:</label>
+        <input type="text" id="username" placeholder="Anonymous or your nickname" required>
+
+        <label>Video URL:</label>
+        <input type="url" id="videoURL" placeholder="https://example.com/video.mp4" required>
+
+        <label>Category:</label>
+        <select id="category">
+            <option value="cat">Funny Cats</option>
+            <option value="skate-fail">Skate Fails</option>
+            <option value="other">Other 2010 vibe</option>
+        </select>
+
+        <label>Video Title:</label>
+        <input type="text" id="videoTitle" placeholder="My 6 Skating Fails / Funny Cats for 2010" required>
+
+        <div class="button" id="submitUpload">Upload Video</div>
+    </form>
+</div>
+
+<div id="settings" class="page">
+    <h3>Settings</h3>
+    <p>Nothing fancy here, just retro vibes.</p>
+</div>
+
+<!-- Tab bar -->
+<div id="tabBar">
+    <div class="tab active" data-page="home">Home</div>
+    <div class="tab" data-page="subscriptions">Subs</div>
+    <div class="tab" data-page="upload">Upload</div>
+    <div class="tab" data-page="settings">Settings</div>
+</div>
+
+<!-- Notification -->
+<div id="notification"></div>
+
+<script>
+// --- Tab switching ---
+var tabs = document.querySelectorAll('.tab');
+var pages = document.querySelectorAll('.page');
+
+tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+        tabs.forEach(t=>t.classList.remove('active'));
+        pages.forEach(p=>p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.page).classList.add('active');
+    });
+});
+
+// --- Video database (mock JSON) ---
+var videoDB = JSON.parse(localStorage.getItem('videoDB') || '[]');
+
+// --- Render video feed ---
+function renderVideos() {
+    var list = document.getElementById('videoList');
+    list.innerHTML='';
+    videoDB.slice().reverse().forEach(function(video){
+        var div = document.createElement('div');
+        div.className='videoItem';
+        div.innerHTML='<h4>'+video.title+' ('+video.username+')</h4>'+
+                      '<video src="'+video.url+'" controls></video>';
+        list.appendChild(div);
+    });
+}
+
+// --- Render subscriptions ---
+function renderSubscriptions() {
+    var list = document.getElementById('subscriptionList');
+    list.innerHTML='';
+    var subs = JSON.parse(localStorage.getItem('subscriptions')||'[]');
+    subs.forEach(function(user){
+        var btn = document.createElement('div');
+        btn.className='button';
+        btn.textContent = 'Unsubscribe '+user;
+        btn.addEventListener('click', function(){
+            var idx = subs.indexOf(user);
+            if(idx>-1) subs.splice(idx,1);
+            localStorage.setItem('subscriptions', JSON.stringify(subs));
+            renderSubscriptions();
+        });
+        list.appendChild(btn);
+    });
+}
+
+// --- Fake notification ---
+function notify(msg) {
+    var notif = document.getElementById('notification');
+    notif.textContent = msg;
+    notif.style.top='10px';
+    setTimeout(function(){
+        notif.style.top='-60px';
+    },3000);
+}
+
+// --- Upload handling ---
+document.getElementById('submitUpload').addEventListener('click', function(){
+    var username = document.getElementById('username').value.trim();
+    var url = document.getElementById('videoURL').value.trim();
+    var category = document.getElementById('category').value;
+    var title = document.getElementById('videoTitle').value.trim();
+
+    // --- Title enforcement ---
+    var titleLower = title.toLowerCase();
+    if(!titleLower.includes('skate') && !titleLower.includes('fail') && !titleLower.includes('cat') && !titleLower.includes('2010')){
+        alert('Your title is not 2010 enough! Try "My 6 Skating Fails" or "Funny Cats for 2010".');
+        return;
+    }
+
+    var video = {
+        username: username||'Anonymous',
+        url: url,
+        category: category,
+        title: title,
+        timestamp: new Date().toISOString()
+    };
+
+    videoDB.push(video);
+    localStorage.setItem('videoDB', JSON.stringify(videoDB));
+    renderVideos();
+    notify('Video uploaded: '+title);
+    document.getElementById('uploadForm').reset();
+});
+
+// --- Fake subscription notification check ---
+function checkSubscriptions() {
+    var subs = JSON.parse(localStorage.getItem('subscriptions')||'[]');
+    videoDB.forEach(function(video){
+        if(subs.includes(video.username) && !video.notified){
+            notify(video.username+' just posted a new video!');
+            video.notified = true;
+        }
+    });
+    localStorage.setItem('videoDB', JSON.stringify(videoDB));
+}
+
+// --- Initial render ---
+renderVideos();
+renderSubscriptions();
+setInterval(checkSubscriptions,10000); // Check every 10s
+</script>
+</body>
+</html>
