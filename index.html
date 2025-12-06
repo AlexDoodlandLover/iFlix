@@ -1,225 +1,183 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
 <head>
-<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>iFlix</title>
-
-<!-- iOS standalone support -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="iFlix">
 <link rel="apple-touch-icon" href="icon.png">
+<style type="text/css">
+/* === Body & Status Bar === */
+body { margin:0; padding:0; font-family:Helvetica,Arial,sans-serif; background:#eee; overflow:hidden; }
+#statusBar { height:20px; background:#000; color:#fff; font-size:12px; text-align:center; line-height:20px; }
 
-<style>
-html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-  font-family:'Helvetica',sans-serif;
-  background:#eee;
-  overflow:hidden;
-  -webkit-overflow-scrolling: touch;
-}
-#statusBar {
-  height:20px;
-  background:#000;
-  color:#fff;
-  font-size:12px;
-  text-align:center;
-  line-height:20px;
-}
-#tabBar {
-  position:fixed;
-  bottom:0;
-  width:100%;
-  height:50px;
-  display:flex;
-  background:#ddd;
-  border-top:1px solid #aaa;
-}
-.tab {
-  flex:1;
-  text-align:center;
-  line-height:50px;
-  border-right:1px solid #aaa;
-  cursor:pointer;
-  font-weight:bold;
-  color:#333;
-}
+/* === Tabs === */
+#tabBar { position:absolute; bottom:0; left:0; width:100%; height:50px; background:#ddd; border-top:1px solid #aaa; }
+.tab { float:left; width:20%; text-align:center; line-height:50px; border-right:1px solid #aaa; cursor:pointer; font-weight:bold; color:#333; }
 .tab:last-child { border-right:none; }
-.tab.active { background:#bbb; }
-.page {
-  display:none;
-  padding:10px;
-  margin-bottom:50px;
-  height:90%;
-  min-height:200px;
-  overflow-y:auto;
-}
-.page.active { display:block; }
-.button {
-  padding:10px 20px;
-  display:inline-block;
-  margin:5px 0;
-  text-align:center;
-  cursor:pointer;
-  border:1px solid #888;
-  border-radius:10px;
-  background:linear-gradient(to bottom,#fff,#ccc);
-  box-shadow:0 2px 2px rgba(0,0,0,0.3);
-}
-.videoItem {
-  background:#fff;
-  border:1px solid #aaa;
-  border-radius:8px;
-  padding:8px;
-  margin:5px 0;
-}
+.tabActive { background:#bbb; }
+
+/* === Pages === */
+.page { display:none; padding:10px; height:300px; overflow:auto; background:#eee; }
+.pageActive { display:block; }
+
+/* === Buttons === */
+.button { padding:10px 20px; margin:5px 0; display:block; text-align:center; border:1px solid #888; border-radius:10px;
+background:#fff; box-shadow:0 2px 2px rgba(0,0,0,0.3); cursor:pointer; }
+
+/* === Video Feed === */
+.videoItem { background:#fff; border:1px solid #aaa; border-radius:8px; padding:8px; margin:5px 0; }
 .videoItem h4 { margin:0 0 5px 0; font-size:14px; }
 .videoItem video { width:100%; max-width:320px; display:block; }
-#notification {
-  position:fixed;
-  top:-60px;
-  left:50%;
-  transform:translateX(-50%);
-  width:90%;
-  max-width:320px;
-  background:#fff;
-  border:1px solid #888;
-  border-radius:10px;
-  padding:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.5);
-  text-align:center;
-  z-index:9999;
-  transition: top 0.5s;
-}
+
+/* === Notification === */
+#notification { position:absolute; top:-60px; left:50%; margin-left:-45%; width:90%; max-width:320px; background:#fff; border:1px solid #888; border-radius:10px; padding:10px; text-align:center; z-index:999; }
+
+/* === Device Theme Selector === */
+#deviceSelectWrapper { padding:5px; text-align:center; }
 </style>
 </head>
 <body>
+
 <div id="statusBar">iFlix</div>
 
+<!-- Device Theme Selector -->
+<div id="deviceSelectWrapper">
+<label for="deviceSelect">Simulate Device Theme:</label>
+<select id="deviceSelect">
+<option value="default">Default / iOS 6</option>
+<option value="iPod4">iPod Touch 4</option>
+<option value="iPhone4S">iPhone 4S</option>
+<option value="iPad2">iPad 2</option>
+</select>
+</div>
+
 <!-- Pages -->
-<div id="home" class="page active"><h3>Home Feed</h3><div id="videoList"></div></div>
+<div id="home" class="page pageActive"><h3>Home Feed</h3><div id="videoList"></div></div>
+
 <div id="subscriptions" class="page"><h3>Subscriptions</h3><div id="subscriptionList"></div></div>
+
 <div id="upload" class="page">
 <h3>Upload Video</h3>
 <form id="uploadForm">
-<label>Username:</label><input type="text" id="username" placeholder="Anonymous or Lexi" required>
-<label>Video URL:</label><input type="url" id="videoURL" placeholder="Direct MP4 link" required>
+<label>Username:</label><input type="text" id="username" value="Anonymous"><br>
+<label>Video Title:</label><input type="text" id="videoTitle" placeholder="My 6 Skating Fails / Funny Cats for 2010"><br>
 <label>Category:</label>
-<select id="category">
-  <option value="cat">Funny Cats</option>
-  <option value="skate-fail">Skate Fails</option>
-  <option value="other">Other 2010 vibe</option>
-</select>
-<label>Video Title:</label>
-<input type="text" id="videoTitle" placeholder="My 6 Skating Fails / Funny Cats for 2010" required>
+<select id="category"><option value="cat">Funny Cats</option><option value="skate-fail">Skate Fails</option><option value="other">Other 2010 vibe</option></select><br>
+<label>Upload Video:</label><input type="file" id="videoFile" accept="video/*"><br>
 <div class="button" id="submitUpload">Upload Video</div>
 </form>
 </div>
+
 <div id="settings" class="page"><h3>Settings</h3><p>Retro vibes only.</p></div>
 
-<!-- Tab bar -->
+<div id="about" class="page">
+<h3>About iFlix</h3>
+<p>Welcome to <strong>iFlix</strong>! It's a retro-style video platform where you can:</p>
+<ul>
+<li>Watch videos uploaded by other users (skate fails, funny cats, or anything 2010-ish).</li>
+<li>Upload your own videos from your device gallery or files.</li>
+<li>Use an anonymous username if you like privacy.</li>
+<li>Subscribe to other users and get notifications when they post.</li>
+<li>Simulate iOS 6 or classic devices to feel like it’s really old-school.</li>
+</ul>
+<p>How it works:</p>
+<ol>
+<li>Pick a tab (Home, Subs, Upload, About).</li>
+<li>Upload or watch videos.</li>
+<li>If you subscribe to someone, iFlix will tell you when they post something new.</li>
+<li>Retro vibes only! Keep the titles like “My 6 Skating Fails” or “Funny Cats for 2010”.</li>
+</ol>
+<p>Enjoy the nostalgia!</p>
+</div>
+
+<!-- Tabs -->
 <div id="tabBar">
-  <div class="tab active" data-page="home">Home</div>
-  <div class="tab" data-page="subscriptions">Subs</div>
-  <div class="tab" data-page="upload">Upload</div>
-  <div class="tab" data-page="settings">Settings</div>
+<div class="tab tabActive" onclick="switchPage('home')">Home</div>
+<div class="tab" onclick="switchPage('subscriptions')">Subs</div>
+<div class="tab" onclick="switchPage('upload')">Upload</div>
+<div class="tab" onclick="switchPage('settings')">Settings</div>
+<div class="tab" onclick="switchPage('about')">About</div>
 </div>
 
 <div id="notification"></div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // --- Tabs ---
-  var tabs = document.querySelectorAll('.tab');
-  var pages = document.querySelectorAll('.page');
-  tabs.forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      tabs.forEach(t => t.classList.remove('active'));
-      pages.forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      var pageId = tab.getAttribute('data-page');
-      document.getElementById(pageId).classList.add('active');
-    });
-  });
+<script type="text/javascript">
+// --- Globals ---
+var videoDB = [];
+var subscriptions = [];
 
-  // --- Video DB ---
-  var videoDB = JSON.parse(localStorage.getItem('videoDB') || '[]');
+// --- Helper ---
+function $(id){return document.getElementById(id);}
 
-  function renderVideos() {
-    var list = document.getElementById('videoList');
-    list.innerHTML = '';
-    videoDB.slice().reverse().forEach(v => {
-      var div = document.createElement('div');
-      div.className = 'videoItem';
-      div.innerHTML = `<h4>${v.title} (${v.username})</h4>
-                       <video src="${v.url}" controls></video>`;
-      list.appendChild(div);
-    });
+// --- Switch Pages ---
+function switchPage(pageId){
+  var pages = document.getElementsByClassName('page');
+  for(var i=0;i<pages.length;i++){pages[i].style.display='none';}
+  $(pageId).style.display='block';
+  var tabs = document.getElementById('tabBar').getElementsByTagName('div');
+  for(var i=0;i<tabs.length;i++){tabs[i].className='tab';}
+  for(var i=0;i<tabs.length;i++){if(tabs[i].getAttribute('onclick').indexOf(pageId)!=-1){tabs[i].className='tab tabActive';}}
+}
+
+// --- Notifications ---
+function notify(msg){
+  var n=$('notification'); n.innerHTML=msg; n.style.top='10px';
+  setTimeout(function(){n.style.top='-60px';},3000);
+}
+
+// --- Render Videos ---
+function renderVideos(){
+  var list=$('videoList'); list.innerHTML='';
+  for(var i=videoDB.length-1;i>=0;i--){
+    var v=videoDB[i];
+    var div=document.createElement('div'); div.className='videoItem';
+    div.innerHTML='<h4>'+v.title+' ('+v.username+')</h4>';
+    if(v.url){ div.innerHTML+='<video src="'+v.url+'" controls></video>'; }
+    else if(v.file){ var vid=document.createElement('video'); vid.controls=true; vid.width=300; vid.src=v.file; div.appendChild(vid); }
+    list.appendChild(div);
   }
+}
 
-  function renderSubscriptions() {
-    var list = document.getElementById('subscriptionList');
-    list.innerHTML = '';
-    var subs = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-    subs.forEach(u => {
-      var btn = document.createElement('div');
-      btn.className = 'button';
-      btn.textContent = 'Unsubscribe ' + u;
-      btn.addEventListener('click', function() {
-        var i = subs.indexOf(u);
-        if(i > -1) subs.splice(i,1);
-        localStorage.setItem('subscriptions', JSON.stringify(subs));
-        renderSubscriptions();
-      });
-      list.appendChild(btn);
-    });
+// --- Render Subscriptions ---
+function renderSubscriptions(){
+  var list=$('subscriptionList'); list.innerHTML='';
+  for(var i=0;i<subscriptions.length;i++){
+    var btn=document.createElement('div'); btn.className='button'; btn.innerHTML='Unsubscribe '+subscriptions[i];
+    btn.onclick=(function(u){return function(){subscriptions.splice(subscriptions.indexOf(u),1); renderSubscriptions();};})(subscriptions[i]);
+    list.appendChild(btn);
   }
+}
 
-  // --- Notifications ---
-  function notify(msg) {
-    var n = document.getElementById('notification');
-    n.textContent = msg;
-    n.style.top = '10px';
-    setTimeout(() => { n.style.top = '-60px'; }, 3000);
+// --- Upload ---
+$('submitUpload').onclick=function(){
+  var username=$('username').value||'Anonymous';
+  var title=$('videoTitle').value||'Untitled';
+  var category=$('category').value;
+  var fileInput=$('videoFile');
+  var fileURL=null;
+  if(fileInput.files && fileInput.files[0]){fileURL=window.URL.createObjectURL(fileInput.files[0]);}
+  if(title.toLowerCase().indexOf('skate')==-1 && title.toLowerCase().indexOf('fail')==-1 && title.toLowerCase().indexOf('cat')==-1 && title.toLowerCase().indexOf('2010')==-1){
+    alert('Title not retro enough! Example: "My 6 Skating Fails" or "Funny Cats for 2010".'); return;
   }
+  videoDB.push({username:username,title:title,category:category,url:fileURL});
+  renderVideos(); notify('Video uploaded: '+title); $('uploadForm').reset();
+};
 
-  // --- Upload ---
-  document.getElementById('submitUpload').addEventListener('click', function() {
-    var username = document.getElementById('username').value.trim() || 'Anonymous';
-    var url = document.getElementById('videoURL').value.trim();
-    var category = document.getElementById('category').value;
-    var title = document.getElementById('videoTitle').value.trim();
-    var t = title.toLowerCase();
-    if(!t.includes('skate') && !t.includes('fail') && !t.includes('cat') && !t.includes('2010')) {
-      alert('Title not retro enough! Example: "My 6 Skating Fails" or "Funny Cats for 2010".');
-      return;
-    }
-    videoDB.push({username, url, category, title, timestamp:new Date().toISOString()});
-    localStorage.setItem('videoDB', JSON.stringify(videoDB));
-    renderVideos();
-    notify('Video uploaded: ' + title);
-    document.getElementById('uploadForm').reset();
-  });
+// --- Device Theme ---
+$('deviceSelect').onchange=function(){
+  var val=this.value; var body=document.getElementsByTagName('body')[0];
+  if(val=='iPod4'){body.style.width='320px'; body.style.height='480px'; body.style.margin='20px auto'; body.style.border='1px solid #000'; body.style.background='#ddd';}
+  else if(val=='iPhone4S'){body.style.width='320px'; body.style.height='480px'; body.style.margin='10px auto'; body.style.border='1px solid #000'; body.style.background='#eee';}
+  else if(val=='iPad2'){body.style.width='768px'; body.style.height='1024px'; body.style.margin='10px auto'; body.style.border='1px solid #000'; body.style.background='#fff';}
+  else{body.style.width='auto'; body.style.height='auto'; body.style.margin='0'; body.style.border='none'; body.style.background='#eee';}
+};
 
-  // --- Subscription notifications ---
-  function checkSubs() {
-    var subs = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-    videoDB.forEach(v => {
-      if(subs.includes(v.username) && !v.notified) {
-        notify(v.username + ' just posted a new video!');
-        v.notified = true;
-      }
-    });
-    localStorage.setItem('videoDB', JSON.stringify(videoDB));
-  }
-
-  // --- Initial render ---
-  renderVideos();
-  renderSubscriptions();
-  setInterval(checkSubs, 10000);
-});
+// --- Initial Render ---
+renderVideos();
+renderSubscriptions();
 </script>
+
 </body>
 </html>
